@@ -14,6 +14,36 @@
 #define LCD_STRIDE 52
 #define LCD_STRIDE_32 (LCD_STRIDE / 4)
 
+const float xFactor = sqrt(3.f/2.f);
+const float yFactor = 1.f/sqrt(2.f);
+
+uint8_t* textureData = NULL;
+
+void loadFile(PlaydateAPI* pd)
+{
+    pd->system->logToConsole("opening file");
+    SDFile* file = pd->file->open("./images/texture.data", kFileRead);
+    if(file == NULL)
+    {
+        pd->system->logToConsole("Error open %s", pd->file->geterr());
+        return;
+    }
+    textureData = pd->system->realloc(textureData, 256*256);
+    if(textureData == NULL)
+    {
+        pd->system->logToConsole("Error alloc");
+        return;
+    }
+
+    if(pd->file->read(file, textureData, 256*256) < 0)
+    {
+        pd->system->logToConsole("Error read");
+        return;
+    }
+    pd->system->logToConsole("READ OK");
+}
+
+
 static inline int32_t int32_min(int32_t a, int32_t b)
 { 
 	return b + ((a-b) & (a-b)>>31);
@@ -134,29 +164,61 @@ Scene* scene = NULL;
 
 void initDisplay(PlaydateAPI* pd)
 {
+	loadFile(pd);
   if(scene)
   {
     freeScene(&scene);
     scene = NULL;
   }
-  scene = createScene(4, 2);
+  scene = createScene(8, 8);
 
-  scene->points[0].x = 200;  scene->points[0].y = 50;
-  scene->points[1].x = 100;  scene->points[1].y = 150;
-  scene->points[2].x = 300;  scene->points[2].y = 150;
+  scene->p3d[0].x = 1.f;  scene->p3d[0].y = -1.f;  scene->p3d[0].z = -1.f;
+	scene->p3d[1].x = 1.f;  scene->p3d[1].y = 1.f;  scene->p3d[1].z = -1.f;
+	scene->p3d[2].x = -1.f;  scene->p3d[2].y = 1.f;  scene->p3d[2].z = -1.f;
+	scene->p3d[3].x = -1.f;  scene->p3d[3].y = -1.f;  scene->p3d[3].z = -1.f;
+	scene->p3d[4].x = 1.f;  scene->p3d[4].y = -1.f;  scene->p3d[4].z = 1.f;
+	scene->p3d[5].x = 1.f;  scene->p3d[5].y = 1.f;  scene->p3d[5].z = 1.f;
+	scene->p3d[6].x = -1.f;  scene->p3d[6].y = 1.f;  scene->p3d[6].z = 1.f;
+	scene->p3d[7].x = -1.f;  scene->p3d[7].y = -1.f;  scene->p3d[7].z = 1.f;
+
+	/*scene->points[0].x = 100;  scene->points[0].y = 80; 
+  scene->points[1].x = 100;  scene->points[1].y = 180;
+  scene->points[2].x = 200;  scene->points[2].y = 100;
   scene->points[3].x = 200;  scene->points[3].y = 200;
+	scene->points[4].x = 300;  scene->points[4].y = 80;
+  scene->points[5].x = 300;  scene->points[5].y = 180;*/
 
-  scene->faces[0].points[0] = 0;
-  scene->faces[0].points[1] = 3;
-  scene->faces[0].points[2] = 1;
-  scene->faces[1].points[0] = 0;
-  scene->faces[1].points[1] = 2;
-  scene->faces[1].points[2] = 3;
+	scene->uvs[0].u = 0.0f;  scene->uvs[0].v = 0.5f;
+  scene->uvs[1].u = 0.5f;  scene->uvs[1].v = 0.5f;
+  scene->uvs[2].u = 1.0f;  scene->uvs[2].v = 0.5f;
+  scene->uvs[3].u = 0.5f;  scene->uvs[3].v = 0.5f;
+	scene->uvs[4].u = 0.0f;  scene->uvs[4].v = 1.0f;
+  scene->uvs[5].u = 0.5f;  scene->uvs[5].v = 1.0f;
+  scene->uvs[6].u = 1.0f;  scene->uvs[6].v = 1.0f;
+  scene->uvs[7].u = 0.5f;  scene->uvs[7].v = 1.0f;
+
+  /*scene->faces[0].points[0] = 0; scene->faces[0].points[1] = 1; scene->faces[0].points[2] = 4;
+  scene->faces[1].points[0] = 1; scene->faces[1].points[1] = 5; scene->faces[1].points[2] = 4;
+	scene->faces[2].points[0] = 1; scene->faces[2].points[1] = 2; scene->faces[2].points[2] = 5;
+  scene->faces[3].points[0] = 2; scene->faces[3].points[1] = 6; scene->faces[3].points[2] = 5;
+	scene->faces[4].points[0] = 2; scene->faces[4].points[1] = 3; scene->faces[4].points[2] = 6;
+  scene->faces[5].points[0] = 3; scene->faces[5].points[1] = 7; scene->faces[5].points[2] = 6;
+	scene->faces[6].points[0] = 3; scene->faces[6].points[1] = 0; scene->faces[6].points[2] = 7;
+  scene->faces[7].points[0] = 0; scene->faces[7].points[1] = 4; scene->faces[7].points[2] = 7;*/
+	scene->faces[0].points[0] = 0; scene->faces[0].points[2] = 1; scene->faces[0].points[1] = 4;
+  scene->faces[1].points[0] = 1; scene->faces[1].points[2] = 5; scene->faces[1].points[1] = 4;
+	scene->faces[2].points[0] = 1; scene->faces[2].points[2] = 2; scene->faces[2].points[1] = 5;
+  scene->faces[3].points[0] = 2; scene->faces[3].points[2] = 6; scene->faces[3].points[1] = 5;
+	scene->faces[4].points[0] = 2; scene->faces[4].points[2] = 3; scene->faces[4].points[1] = 6;
+  scene->faces[5].points[0] = 3; scene->faces[5].points[2] = 7; scene->faces[5].points[1] = 6;
+	scene->faces[6].points[0] = 3; scene->faces[6].points[2] = 0; scene->faces[6].points[1] = 7;
+  scene->faces[7].points[0] = 0; scene->faces[7].points[2] = 4; scene->faces[7].points[1] = 7;
 }
 
 Scene* createScene(size_t pointCount, size_t faceCount)
 {
   Scene* scene = (Scene*)malloc(sizeof(Scene));
+	scene->p3d = (Point3D*)malloc(sizeof(Point3D) * pointCount);
   scene->points = (Point2D*)malloc(sizeof(Point2D) * pointCount);
   scene->uvs = (UV*)malloc(sizeof(UV) * pointCount);
   scene->faces = (Face*)malloc(sizeof(Face) * faceCount);
@@ -188,6 +250,12 @@ void drawFace(uint8_t* frameBuffer, Face* face, PlaydateAPI* pd)
 	float x3 = scene->points[face->points[2]].x;
 	float y3 = scene->points[face->points[2]].y;
 
+	float u1 = scene->uvs[face->points[0]].u;
+	float v1 = scene->uvs[face->points[0]].v;
+	float u2 = scene->uvs[face->points[1]].u;
+	float v2 = scene->uvs[face->points[1]].v;
+	float u3 = scene->uvs[face->points[2]].u;
+	float v3 = scene->uvs[face->points[2]].v;
   /*for(int y = y1; y <= y2; y++)
   {
     drawFragment(row + y * LCD_STRIDE_32, (int)x1, (int)x2, 0xffffffff);
@@ -232,19 +300,37 @@ void drawFace(uint8_t* frameBuffer, Face* face, PlaydateAPI* pd)
 		{
 			if(w1 >= 0.f && w2 >= 0.f && w3 >= 0.f)
 			{
-				drawFragment(row + y * LCD_STRIDE_32, (int)x, (int)x + 1, 0xffffffff);
+				float u = (w1 * u1 + w2 * u2 + w3 * u3)/(w1+w2+w3);
+				float v = (w1 * v1 + w2 * v2 + w3 * v3)/(w1+w2+w3);
+				uint8_t _col = u * 255;
+				uint8_t _row = v * 255;
+				uint8_t val = textureData[_col + _row * 256];
+				drawFragment(row + y * LCD_STRIDE_32, (int)x, (int)x + 1, val == 0 ? 0x00000000 : 0xffffffff);
 			}
 		}
 	}
 
 }
 
+
 void draw(uint8_t* frameBuffer, PlaydateAPI* pd)
 {
-  //float angle = pd->system->getCrankAngle()/180.f*M_PI;
+  //float angle = 45.f/180.f * M_PI;
+	float angle = pd->system->getCrankAngle()/180.f*M_PI;
 
   if(scene)
   {
+		for(size_t i = 0; i < scene->pointCount; i++)
+		{
+			const float factor = 50.f;
+			const float dX = 200.f;
+			const float dY = 120.f;
+			scene->points[i].x = xFactor * (scene->p3d[i].x * cos(angle) - scene->p3d[i].y * sin(angle));
+			scene->points[i].x = factor * scene->points[i].x + dX;
+			scene->points[i].y = yFactor * (scene->p3d[i].x * sin(angle) + scene->p3d[i].y * cos(angle)) + scene->p3d[i].z;
+			scene->points[i].y = factor * scene->points[i].y + dY;
+		}
+		pd->system->logToConsole("Angle %f -> (%f, %f)", angle, scene->points[0].x, scene->points[0].y);
     for(size_t i = 0; i < scene->faceCount; i++)
     {
       drawFace(frameBuffer, &scene->faces[i], pd);

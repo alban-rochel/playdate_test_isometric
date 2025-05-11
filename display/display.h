@@ -6,6 +6,13 @@ typedef struct
 {
   float x;
   float y;
+  float z;
+} Point3D;
+
+typedef struct
+{
+  float x;
+  float y;
 } Point2D;
 
 typedef struct
@@ -22,6 +29,7 @@ typedef struct{
 
 typedef struct
 {
+  Point3D* p3d;
   Point2D* points;
   UV* uvs;
   Face* faces;
