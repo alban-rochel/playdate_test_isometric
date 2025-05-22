@@ -170,16 +170,19 @@ void initDisplay(PlaydateAPI* pd)
     freeScene(&scene);
     scene = NULL;
   }
-  scene = createScene(8, 8);
+  scene = createScene(10, 14);
 
-  scene->p3d[0].x = 1.f;  scene->p3d[0].y = -1.f;  scene->p3d[0].z = -1.f;
-	scene->p3d[1].x = 1.f;  scene->p3d[1].y = 1.f;  scene->p3d[1].z = -1.f;
-	scene->p3d[2].x = -1.f;  scene->p3d[2].y = 1.f;  scene->p3d[2].z = -1.f;
-	scene->p3d[3].x = -1.f;  scene->p3d[3].y = -1.f;  scene->p3d[3].z = -1.f;
-	scene->p3d[4].x = 1.f;  scene->p3d[4].y = -1.f;  scene->p3d[4].z = 1.f;
-	scene->p3d[5].x = 1.f;  scene->p3d[5].y = 1.f;  scene->p3d[5].z = 1.f;
-	scene->p3d[6].x = -1.f;  scene->p3d[6].y = 1.f;  scene->p3d[6].z = 1.f;
-	scene->p3d[7].x = -1.f;  scene->p3d[7].y = -1.f;  scene->p3d[7].z = 1.f;
+  scene->p3d[0].x = 1.5f;  scene->p3d[0].y = -1.f;  scene->p3d[0].z = -1.f;
+	scene->p3d[1].x = 1.5f;  scene->p3d[1].y = 1.f;  scene->p3d[1].z = -1.f;
+	scene->p3d[2].x = -1.5f;  scene->p3d[2].y = 1.f;  scene->p3d[2].z = -1.f;
+	scene->p3d[3].x = -1.5f;  scene->p3d[3].y = -1.f;  scene->p3d[3].z = -1.f;
+	scene->p3d[4].x = 1.5f;  scene->p3d[4].y = -1.f;  scene->p3d[4].z = 1.f;
+	scene->p3d[5].x = 1.5f;  scene->p3d[5].y = 1.f;  scene->p3d[5].z = 1.f;
+	scene->p3d[6].x = -1.5f;  scene->p3d[6].y = 1.f;  scene->p3d[6].z = 1.f;
+	scene->p3d[7].x = -1.5f;  scene->p3d[7].y = -1.f;  scene->p3d[7].z = 1.f;
+
+	scene->p3d[8].x = 0.f;  scene->p3d[8].y = 1.f;  scene->p3d[8].z = -2.f;
+	scene->p3d[9].x = 0.f;  scene->p3d[9].y = -1.f;  scene->p3d[9].z = -2.f;
 
 	/*scene->points[0].x = 100;  scene->points[0].y = 80; 
   scene->points[1].x = 100;  scene->points[1].y = 180;
@@ -197,6 +200,9 @@ void initDisplay(PlaydateAPI* pd)
   scene->uvs[6].u = 1.0f;  scene->uvs[6].v = 1.0f;
   scene->uvs[7].u = 0.5f;  scene->uvs[7].v = 1.0f;
 
+	scene->uvs[8].u = 0.0f;  scene->uvs[8].v = 0.0f;
+  scene->uvs[9].u = 0.0f;  scene->uvs[9].v = 0.0f;
+
   /*scene->faces[0].points[0] = 0; scene->faces[0].points[1] = 1; scene->faces[0].points[2] = 4;
   scene->faces[1].points[0] = 1; scene->faces[1].points[1] = 5; scene->faces[1].points[2] = 4;
 	scene->faces[2].points[0] = 1; scene->faces[2].points[1] = 2; scene->faces[2].points[2] = 5;
@@ -213,6 +219,15 @@ void initDisplay(PlaydateAPI* pd)
   scene->faces[5].points[0] = 3; scene->faces[5].points[2] = 7; scene->faces[5].points[1] = 6;
 	scene->faces[6].points[0] = 3; scene->faces[6].points[2] = 0; scene->faces[6].points[1] = 7;
   scene->faces[7].points[0] = 0; scene->faces[7].points[2] = 4; scene->faces[7].points[1] = 7;
+
+	scene->faces[8].points[0] = 1; scene->faces[8].points[2] = 8; scene->faces[8].points[1] = 2;
+  scene->faces[9].points[0] = 3; scene->faces[9].points[2] = 9; scene->faces[9].points[1] = 0;
+
+	scene->faces[10].points[0] = 0; scene->faces[10].points[1] = 1; scene->faces[10].points[2] = 8;
+  scene->faces[11].points[0] = 8; scene->faces[11].points[1] = 9; scene->faces[11].points[2] = 0;
+
+	scene->faces[12].points[0] = 2; scene->faces[12].points[1] = 3; scene->faces[12].points[2] = 8;
+  scene->faces[13].points[0] = 8; scene->faces[13].points[2] = 9; scene->faces[13].points[1] = 3;
 }
 
 Scene* createScene(size_t pointCount, size_t faceCount)
@@ -330,7 +345,7 @@ void draw(uint8_t* frameBuffer, PlaydateAPI* pd)
 			scene->points[i].y = yFactor * (scene->p3d[i].x * sin(angle) + scene->p3d[i].y * cos(angle)) + scene->p3d[i].z;
 			scene->points[i].y = factor * scene->points[i].y + dY;
 		}
-		pd->system->logToConsole("Angle %f -> (%f, %f)", angle, scene->points[0].x, scene->points[0].y);
+		//pd->system->logToConsole("Angle %f -> (%f, %f)", angle, scene->points[0].x, scene->points[0].y);
     for(size_t i = 0; i < scene->faceCount; i++)
     {
       drawFace(frameBuffer, &scene->faces[i], pd);
