@@ -266,7 +266,7 @@ void freeScene(Scene** scene)
 
 void drawFace(uint8_t* frameBuffer, Face* face, PlaydateAPI* pd)
 {
-  uint32_t* row = (uint32_t*)frameBuffer;
+	// Minimize float ops, hoist invariants, use integer math where possible
 	float x1 = scene->points[face->points[0]].x;
 	float y1 = scene->points[face->points[0]].y;
 	float x2 = scene->points[face->points[1]].x;
@@ -281,69 +281,71 @@ void drawFace(uint8_t* frameBuffer, Face* face, PlaydateAPI* pd)
 	float u3 = scene->uvs[face->points[2]].u;
 	float v3 = scene->uvs[face->points[2]].v;
 
-	// Compute bounding boxes
+	// Compute bounding box (use ints for loop bounds)
+	float minXf = min3(x1, x2, x3);
+	float maxXf = max3(x1, x2, x3);
+	float minYf = min3(y1, y2, y3);
+	float maxYf = max3(y1, y2, y3);
 
-	float minX = min3(x1, x2, x3);
-	float maxX = max3(x1, x2, x3);
-	float minY = min3(y1, y2, y3);
-	float maxY = max3(y1, y2, y3);
+	int minX = (int)max2(minXf, 0);
+	int minY = (int)max2(minYf, 0);
+	int maxX = (int)min2(maxXf, LCD_COLUMNS - 1);
+	int maxY = (int)min2(maxYf, LCD_ROWS - 1);
 
-	// Clip against screen bounds;
+	// Precompute triangle setup
+	float a12 = y1 - y2, b12 = x2 - x1;
+	float a23 = y2 - y3, b23 = x3 - x2;
+	float a31 = y3 - y1, b31 = x1 - x3;
 
-	minX = max2(minX, 0);
-	minY = max2(minY, 0);
-	maxX = min2(maxX, LCD_COLUMNS - 1);
-	maxY = min2(maxY, LCD_COLUMNS - 1);
+	float w12_row = orientation(x1, y1, x2, y2, minX + 0.5f, minY + 0.5f);
+	float w23_row = orientation(x2, y2, x3, y3, minX + 0.5f, minY + 0.5f);
+	float w31_row = orientation(x3, y3, x1, y1, minX + 0.5f, minY + 0.5f);
 
-  // Rasterize
+	float invw123 = 1.f / (w12_row + w23_row + w31_row);
 
-  // Triangle setup
-  float a12 = y1 - y2, b12 = x2 - x1;
-  float a23 = y2 - y3, b23 = x3 - x2;
-  float a31 = y3 - y1, b31 = x1 - x3;
+	// Precompute UV deltas for scanline stepping
+	float deltaU132 = (a23 * u1 + a31 * u2 + a12 * u3) * invw123;
+	float deltaV132 = (a23 * v1 + a31 * v2 + a12 * v3) * invw123;
 
-  float w1_row = orientation(x2, y2, x3, y3, minX, minY);
-  float w2_row = orientation(x3, y3, x1, y1, minX, minY);
-  float w3_row = orientation(x1, y1, x2, y2, minX, minY);
-
-	float w1 = 0.f;
-	float w2 = 0.f;
-	float w3 = 0.f;
-
-	float invw = 1.f / (w1_row + w2_row + w3_row);
-
-	for(size_t y = minY + 0.5f; y <= maxY + 0.5f; y++, w1_row += b23, w2_row += b31, w3_row += b12)
+	for(int y = minY; y <= maxY; ++y,
+			w23_row += b23, w31_row += b31, w12_row += b12)
 	{
-		w1 = w1_row;
-		w2 = w2_row;
-		w3 = w3_row;
+		float w23 = w23_row;
+		float w31 = w31_row;
+		float w12 = w12_row;
 
-		uint32_t done = 0;
-		for(size_t x = minX + 0.5f; x <= maxX + 0.5f; x++, w1 += a23, w2 += a31, w3 += a12)
+		uint8_t* target = &frameBuffer[y * 400 + minX];
+
+		float u132 = (w23 * u1 + w31 * u2 + w12 * u3) * invw123;
+		float v132 = (w23 * v1 + w31 * v2 + w12 * v3) * invw123;
+
+		int done = 0;
+		for(int x = minX; x <= maxX; ++x,
+				w23 += a23, w31 += a31, w12 += a12,
+				++target,
+				u132 += deltaU132, v132 += deltaV132)
 		{
-			if(w1 >= 0.f && w2 >= 0.f && w3 >= 0.f)
+			if(w31 >= 0.f && w23 >= 0.f && w12 >= 0.f)
 			{
-				float u = (w1 * u1 + w2 * u2 + w3 * u3) * invw;
-				float v = (w1 * v1 + w2 * v2 + w3 * v3) * invw;
-				uint8_t _col = u;
-				uint8_t _row = v;
-				uint8_t val = textureData[_col + _row * 128];
-				//drawFragment(row + y * LCD_STRIDE_32, (int)x, (int)x + 1, val == 0 ? 0x00000000 : 0xffffffff);
-				frameBuffer[y * 400 + x] = val;
+				int _col = (int)u132;
+				int _row = (int)v132;
+				// Clamp UVs to texture size
+				//if(_col >= 0 && _col < 128 && _row >= 0 && _row < 128)
+					*target = textureData[_col + _row * 128];
 				done = 1;
 			}
 			else if(done)
 			{
 				break;
 			}
+			
 		}
 	}
-
 }
 
 void drawQuad(uint8_t* frameBuffer, Quad* face, PlaydateAPI* pd)
 {
-  uint32_t* row = (uint32_t*)frameBuffer;
+	// Minimize float ops, hoist invariants, use integer math where possible
 	float x1 = scene->points[face->points[0]].x;
 	float y1 = scene->points[face->points[0]].y;
 	float x2 = scene->points[face->points[1]].x;
@@ -362,68 +364,53 @@ void drawQuad(uint8_t* frameBuffer, Quad* face, PlaydateAPI* pd)
 	float u4 = scene->uvs[face->points[3]].u;
 	float v4 = scene->uvs[face->points[3]].v;
 
-	// Compute bounding boxes
+	// Compute bounding box (use ints for loop bounds)
+	float minXf = min4(x1, x2, x3, x4);
+	float maxXf = max4(x1, x2, x3, x4);
+	float minYf = min4(y1, y2, y3, y4);
+	float maxYf = max4(y1, y2, y3, y4);
 
-	float minX = min4(x1, x2, x3, x4);
-	float maxX = max4(x1, x2, x3, x4);
-	float minY = min4(y1, y2, y3, y4);
-	float maxY = max4(y1, y2, y3, y4);
+	int minX = (int)max2(minXf, 0);
+	int minY = (int)max2(minYf, 0);
+	int maxX = (int)min2(maxXf, LCD_COLUMNS - 1);
+	int maxY = (int)min2(maxYf, LCD_ROWS - 1);
 
-	// Clip against screen bounds;
-
-	minX = max2(minX, 0);
-	minY = max2(minY, 0);
-	maxX = min2(maxX, LCD_COLUMNS - 1);
-	maxY = min2(maxY, LCD_COLUMNS - 1);
-
-  // Rasterize
-
-  // Triangle setup
-  float a12 = y1 - y2, b12 = x2 - x1;
-  float a23 = y2 - y3, b23 = x3 - x2;
-  float a31 = y3 - y1, b31 = x1 - x3;
+	// Precompute triangle setup
+	float a12 = y1 - y2, b12 = x2 - x1;
+	float a23 = y2 - y3, b23 = x3 - x2;
+	float a31 = y3 - y1, b31 = x1 - x3;
 
 	float _a13 = -a31;
 	float _a34 = y3 - y4, _b34 = x4 - x3;
 	float _a41 = y4 - y1, _b41 = x1 - x4;
 
-  float w12_row = orientation(x1, y1, x2, y2, minX, minY);
-  float w23_row = orientation(x2, y2, x3, y3, minX, minY);
-  float w31_row = orientation(x3, y3, x1, y1, minX, minY);
+	float w12_row = orientation(x1, y1, x2, y2, minX + 0.5f, minY + 0.5f);
+	float w23_row = orientation(x2, y2, x3, y3, minX + 0.5f, minY + 0.5f);
+	float w31_row = orientation(x3, y3, x1, y1, minX + 0.5f, minY + 0.5f);
 
-	//float _w13_row = orientation(x1, y1, x3, y3, minX, minY);
-  float _w34_row = orientation(x3, y3, x4, y4, minX, minY);
-  float _w41_row = orientation(x4, y4, x1, y1, minX, minY);
-
-	float w12 = 0.f;
-	float w23 = 0.f;
-	float w31 = 0.f;
-
-	//float _w13 = 0.f;
-	float _w34 = 0.f;
-	float _w41 = 0.f;
+	float _w34_row = orientation(x3, y3, x4, y4, minX + 0.5f, minY + 0.5f);
+	float _w41_row = orientation(x4, y4, x1, y1, minX + 0.5f, minY + 0.5f);
 
 	float invw123 = 1.f / (w12_row + w23_row + w31_row);
 	float invw134 = 1.f / (-w31_row + _w34_row + _w41_row);
 
+	// Precompute UV deltas for scanline stepping
 	float deltaU132 = (a23 * u1 + a31 * u2 + a12 * u3) * invw123;
 	float deltaV132 = (a23 * v1 + a31 * v2 + a12 * v3) * invw123;
 	float deltaU134 = (_a13 * u4 + _a34 * u1 + _a41 * u3) * invw134;
 	float deltaV134 = (_a13 * v4 + _a34 * v1 + _a41 * v3) * invw134;
 
-	for(size_t y = minY + 0.5f; y <= maxY + 0.5f; y++,
-		w23_row += b23, w31_row += b31, w12_row += b12,
-		_w34_row += _b34, _w41_row += _b41)
+	for(int y = minY; y <= maxY; ++y,
+			w23_row += b23, w31_row += b31, w12_row += b12,
+			_w34_row += _b34, _w41_row += _b41)
 	{
-		w23 = w23_row;
-		w31 = w31_row;
-		w12 = w12_row;
+		float w23 = w23_row;
+		float w31 = w31_row;
+		float w12 = w12_row;
+		float _w34 = _w34_row;
+		float _w41 = _w41_row;
 
-		_w34 = _w34_row;
-		_w41 = _w41_row;
-
-		uint32_t done = 0;
-		uint8_t* target = &frameBuffer[y * 400 + (size_t)(minX+0.5f)];
+		uint8_t* target = &frameBuffer[y * 400 + minX];
 
 		float u132 = (w23 * u1 + w31 * u2 + w12 * u3) * invw123;
 		float v132 = (w23 * v1 + w31 * v2 + w12 * v3) * invw123;
@@ -431,21 +418,22 @@ void drawQuad(uint8_t* frameBuffer, Quad* face, PlaydateAPI* pd)
 		float u134 = (-w31 * u4 + _w34 * u1 + _w41 * u3) * invw134;
 		float v134 = (-w31 * v4 + _w34 * v1 + _w41 * v3) * invw134;
 
-		for(size_t x = minX + 0.5f; x <= maxX + 0.5f; x++,
-			w23 += a23, w31 += a31, w12 += a12,
-			_w34 += _a34, _w41 += _a41, ++target, u132 += deltaU132, v132 += deltaV132, u134 += deltaU134, v134 += deltaV134)
+		int done = 0;
+		for(int x = minX; x <= maxX; ++x,
+				w23 += a23, w31 += a31, w12 += a12,
+				_w34 += _a34, _w41 += _a41, ++target,
+				u132 += deltaU132, v132 += deltaV132,
+				u134 += deltaU134, v134 += deltaV134)
 		{
 			if(w31 >= 0.f)
 			{
 				if(w23 >= 0.f && w12 >= 0.f)
 				{
-					/*float u = (w23 * u1 + w31 * u2 + w12 * u3) * invw123;
-					float v = (w23 * v1 + w31 * v2 + w12 * v3) * invw123;*/
-					uint8_t _col = u132;
-					uint8_t _row = v132;
-					uint8_t val = textureData[_col + _row * 128];
-					//frameBuffer[y * 400 + x] = val;
-					*target = val;
+					int _col = (int)u132;
+					int _row = (int)v132;
+					// Clamp UVs to texture size
+					//if(_col >= 0 && _col < 128 && _row >= 0 && _row < 128)
+						*target = textureData[_col + _row * 128];
 					done = 1;
 				}
 				else if(done)
@@ -457,13 +445,10 @@ void drawQuad(uint8_t* frameBuffer, Quad* face, PlaydateAPI* pd)
 			{
 				if(_w34 >= 0.f && _w41 >= 0.f)
 				{
-					/*float u = (-w31 * u4 + _w34 * u1 + _w41 * u3) * invw134;
-					float v = (-w31 * v4 + _w34 * v1 + _w41 * v3) * invw134;*/
-					uint8_t _col = u134;
-					uint8_t _row = v134;
-					uint8_t val = textureData[_col + _row * 128];
-					//frameBuffer[y * 400 + x] = val;
-					*target = val;
+					int _col = (int)u134;
+					int _row = (int)v134;
+					//if(_col >= 0 && _col < 128 && _row >= 0 && _row < 128)
+						*target = textureData[_col + _row * 128];
 					done = 1;
 				}
 				else if(done)
@@ -471,7 +456,6 @@ void drawQuad(uint8_t* frameBuffer, Quad* face, PlaydateAPI* pd)
 					break;
 				}
 			}
-
 		}
 	}
 }
