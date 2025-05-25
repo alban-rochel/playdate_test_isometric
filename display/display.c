@@ -1,4 +1,5 @@
 #include "display.h"
+#include <string.h>
 
 #define FIXED_POINT_SHIFT 8
 #define fixed_t int32_t
@@ -196,17 +197,17 @@ void initDisplay(PlaydateAPI* pd)
 	scene->p3d[8].x = 0.f;  scene->p3d[8].y = 1.f;  scene->p3d[8].z = -2.f;
 	scene->p3d[9].x = 0.f;  scene->p3d[9].y = -1.f;  scene->p3d[9].z = -2.f;
 
-	scene->uvs[0].u = 0.0f;  scene->uvs[0].v = 0.5f;
-  scene->uvs[1].u = 0.5f;  scene->uvs[1].v = 0.5f;
-  scene->uvs[2].u = 1.0f;  scene->uvs[2].v = 0.5f;
-  scene->uvs[3].u = 0.5f;  scene->uvs[3].v = 0.5f;
-	scene->uvs[4].u = 0.0f;  scene->uvs[4].v = 1.0f;
-  scene->uvs[5].u = 0.5f;  scene->uvs[5].v = 1.0f;
-  scene->uvs[6].u = 1.0f;  scene->uvs[6].v = 1.0f;
-  scene->uvs[7].u = 0.5f;  scene->uvs[7].v = 1.0f;
+	scene->uvs[0].u = 0.0f * 127.f;  scene->uvs[0].v = 0.5f * 127.f;
+  scene->uvs[1].u = 0.5f * 127.f;  scene->uvs[1].v = 0.5f * 127.f;
+  scene->uvs[2].u = 1.0f * 127.f;  scene->uvs[2].v = 0.5f * 127.f;
+  scene->uvs[3].u = 0.5f * 127.f;  scene->uvs[3].v = 0.5f * 127.f;
+	scene->uvs[4].u = 0.0f * 127.f;  scene->uvs[4].v = 1.0f * 127.f;
+  scene->uvs[5].u = 0.5f * 127.f;  scene->uvs[5].v = 1.0f * 127.f;
+  scene->uvs[6].u = 1.0f * 127.f;  scene->uvs[6].v = 1.0f * 127.f;
+  scene->uvs[7].u = 0.5f * 127.f;  scene->uvs[7].v = 1.0f * 127.f;
 
-	scene->uvs[8].u = 0.0f;  scene->uvs[8].v = 0.0f;
-  scene->uvs[9].u = 0.0f;  scene->uvs[9].v = 0.0f;
+	scene->uvs[8].u = 0.0f * 127.f;  scene->uvs[8].v = 0.0f * 127.f;
+  scene->uvs[9].u = 0.0f * 127.f;  scene->uvs[9].v = 0.0f * 127.f;
 
 	/*scene->faces[0].points[0] = 0; scene->faces[0].points[1] = 4; scene->faces[0].points[2] = 1;
   scene->faces[1].points[0] = 1; scene->faces[1].points[1] = 4; scene->faces[1].points[2] = 5; */
@@ -273,12 +274,12 @@ void drawFace(uint8_t* frameBuffer, Face* face, PlaydateAPI* pd)
 	float x3 = scene->points[face->points[2]].x;
 	float y3 = scene->points[face->points[2]].y;
 
-	float u1 = scene->uvs[face->points[0]].u * 127.f;
-	float v1 = scene->uvs[face->points[0]].v * 127.f;
-	float u2 = scene->uvs[face->points[1]].u * 127.f;
-	float v2 = scene->uvs[face->points[1]].v * 127.f;
-	float u3 = scene->uvs[face->points[2]].u * 127.f;
-	float v3 = scene->uvs[face->points[2]].v * 127.f;
+	float u1 = scene->uvs[face->points[0]].u;
+	float v1 = scene->uvs[face->points[0]].v;
+	float u2 = scene->uvs[face->points[1]].u;
+	float v2 = scene->uvs[face->points[1]].v;
+	float u3 = scene->uvs[face->points[2]].u;
+	float v3 = scene->uvs[face->points[2]].v;
 
 	// Compute bounding boxes
 
@@ -352,14 +353,14 @@ void drawQuad(uint8_t* frameBuffer, Quad* face, PlaydateAPI* pd)
 	float x4 = scene->points[face->points[3]].x;
 	float y4 = scene->points[face->points[3]].y;
 
-	float u1 = scene->uvs[face->points[0]].u * 127.f;
-	float v1 = scene->uvs[face->points[0]].v * 127.f;
-	float u2 = scene->uvs[face->points[1]].u * 127.f;
-	float v2 = scene->uvs[face->points[1]].v * 127.f;
-	float u3 = scene->uvs[face->points[2]].u * 127.f;
-	float v3 = scene->uvs[face->points[2]].v * 127.f;
-	float u4 = scene->uvs[face->points[3]].u * 127.f;
-	float v4 = scene->uvs[face->points[3]].v * 127.f;
+	float u1 = scene->uvs[face->points[0]].u;
+	float v1 = scene->uvs[face->points[0]].v;
+	float u2 = scene->uvs[face->points[1]].u;
+	float v2 = scene->uvs[face->points[1]].v;
+	float u3 = scene->uvs[face->points[2]].u;
+	float v3 = scene->uvs[face->points[2]].v;
+	float u4 = scene->uvs[face->points[3]].u;
+	float v4 = scene->uvs[face->points[3]].v;
 
 	// Compute bounding boxes
 
@@ -382,7 +383,7 @@ void drawQuad(uint8_t* frameBuffer, Quad* face, PlaydateAPI* pd)
   float a23 = y2 - y3, b23 = x3 - x2;
   float a31 = y3 - y1, b31 = x1 - x3;
 
-	//float _a13 = y1 - y3, _b13 = x3 - x1;
+	float _a13 = -a31;
 	float _a34 = y3 - y4, _b34 = x4 - x3;
 	float _a41 = y4 - y1, _b41 = x1 - x4;
 
@@ -405,6 +406,11 @@ void drawQuad(uint8_t* frameBuffer, Quad* face, PlaydateAPI* pd)
 	float invw123 = 1.f / (w12_row + w23_row + w31_row);
 	float invw134 = 1.f / (-w31_row + _w34_row + _w41_row);
 
+	float deltaU132 = (a23 * u1 + a31 * u2 + a12 * u3) * invw123;
+	float deltaV132 = (a23 * v1 + a31 * v2 + a12 * v3) * invw123;
+	float deltaU134 = (_a13 * u4 + _a34 * u1 + _a41 * u3) * invw134;
+	float deltaV134 = (_a13 * v4 + _a34 * v1 + _a41 * v3) * invw134;
+
 	for(size_t y = minY + 0.5f; y <= maxY + 0.5f; y++,
 		w23_row += b23, w31_row += b31, w12_row += b12,
 		_w34_row += _b34, _w41_row += _b41)
@@ -416,43 +422,56 @@ void drawQuad(uint8_t* frameBuffer, Quad* face, PlaydateAPI* pd)
 		_w34 = _w34_row;
 		_w41 = _w41_row;
 
-		//uint32_t done = 0;
+		uint32_t done = 0;
+		uint8_t* target = &frameBuffer[y * 400 + (size_t)(minX+0.5f)];
+
+		float u132 = (w23 * u1 + w31 * u2 + w12 * u3) * invw123;
+		float v132 = (w23 * v1 + w31 * v2 + w12 * v3) * invw123;
+
+		float u134 = (-w31 * u4 + _w34 * u1 + _w41 * u3) * invw134;
+		float v134 = (-w31 * v4 + _w34 * v1 + _w41 * v3) * invw134;
+
 		for(size_t x = minX + 0.5f; x <= maxX + 0.5f; x++,
 			w23 += a23, w31 += a31, w12 += a12,
-			_w34 += _a34, _w41 += _a41)
+			_w34 += _a34, _w41 += _a41, ++target, u132 += deltaU132, v132 += deltaV132, u134 += deltaU134, v134 += deltaV134)
 		{
 			if(w31 >= 0.f)
 			{
 				if(w23 >= 0.f && w12 >= 0.f)
 				{
-					float u = (w23 * u1 + w31 * u2 + w12 * u3) * invw123;
-					float v = (w23 * v1 + w31 * v2 + w12 * v3) * invw123;
-					uint8_t _col = u;
-					uint8_t _row = v;
+					/*float u = (w23 * u1 + w31 * u2 + w12 * u3) * invw123;
+					float v = (w23 * v1 + w31 * v2 + w12 * v3) * invw123;*/
+					uint8_t _col = u132;
+					uint8_t _row = v132;
 					uint8_t val = textureData[_col + _row * 128];
-					frameBuffer[y * 400 + x] = val;
-					//done = 1;
+					//frameBuffer[y * 400 + x] = val;
+					*target = val;
+					done = 1;
+				}
+				else if(done)
+				{
+					break;
 				}
 			}
 			else //w31 < 0.f
 			{
 				if(_w34 >= 0.f && _w41 >= 0.f)
 				{
-					float u = (-w31 * u4 + _w34 * u1 + _w41 * u3) * invw134;
-					float v = (-w31 * v4 + _w34 * v1 + _w41 * v3) * invw134;
-					uint8_t _col = u;
-					uint8_t _row = v;
+					/*float u = (-w31 * u4 + _w34 * u1 + _w41 * u3) * invw134;
+					float v = (-w31 * v4 + _w34 * v1 + _w41 * v3) * invw134;*/
+					uint8_t _col = u134;
+					uint8_t _row = v134;
 					uint8_t val = textureData[_col + _row * 128];
-					frameBuffer[y * 400 + x] = val;
-					//done = 1;
+					//frameBuffer[y * 400 + x] = val;
+					*target = val;
+					done = 1;
+				}
+				else if(done)
+				{
+					break;
 				}
 			}
 
-
-			/*else if(done)
-			{
-				break;
-			}*/
 		}
 	}
 }
@@ -461,13 +480,10 @@ void drawQuad(uint8_t* frameBuffer, Quad* face, PlaydateAPI* pd)
 void draw(uint8_t* frameBuffer, PlaydateAPI* pd)
 {
 	uint32_t* fb32 = __frameBuffer__;
-	for(size_t i = 0; i < 400 * 240 / 4; i++)
-	{
-		fb32[i] = 0x00000000;
-	}
+	memset(__frameBuffer__, 0, 400 * 240 * sizeof(uint8_t));
 
 	pd->graphics->clear(kColorBlack);
-	pd->graphics->setDrawOffset(0, 0);
+	//pd->graphics->setDrawOffset(0, 0);
 
 	// Draw the current FPS on the screen
 	pd->system->drawFPS(0, 0);
