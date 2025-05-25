@@ -8,7 +8,7 @@ int update(void* userdata)
 	PlaydateAPI* pd = userdata;
 	//checkButtons(pd);
 
-	pd->graphics->clear(kColorBlack);
+	//pd->graphics->clear(kColorBlack);
 
 	uint8_t* frameBuffer = pd->graphics->getFrame();
 
