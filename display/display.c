@@ -274,6 +274,11 @@ void drawFace(uint8_t* frameBuffer, Face* face, PlaydateAPI* pd)
 	float x3 = scene->points[face->points[2]].x;
 	float y3 = scene->points[face->points[2]].y;
 
+	if(orientation(x1, y1, x2, y2, x3, y3) < 0.f)
+	{
+		return;
+	}
+
 	float u1 = scene->uvs[face->points[0]].u;
 	float v1 = scene->uvs[face->points[0]].v;
 	float u2 = scene->uvs[face->points[1]].u;
@@ -354,6 +359,11 @@ void drawQuad(uint8_t* frameBuffer, Quad* face, PlaydateAPI* pd)
 	float y3 = scene->points[face->points[2]].y;
 	float x4 = scene->points[face->points[3]].x;
 	float y4 = scene->points[face->points[3]].y;
+
+	if(orientation(x1, y1, x2, y2, x3, y3) < 0.f)
+	{
+		return;
+	}
 
 	float u1 = scene->uvs[face->points[0]].u;
 	float v1 = scene->uvs[face->points[0]].v;
