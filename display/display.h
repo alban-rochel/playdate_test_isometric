@@ -29,8 +29,8 @@ typedef struct{
 
 typedef struct{
 
-  size_t points[3];
-  size_t uvs[3];
+  size_t points[4];
+  size_t uvs[4];
 } Quad;
 
 typedef struct
@@ -47,7 +47,7 @@ typedef struct
 
 void initDisplay(PlaydateAPI* pd);
 
-Scene* createScene(size_t pointCount, size_t faceCount, size_t quadCount);
+Scene* createScene(size_t pointCount, size_t faceCount, size_t quadCount, size_t uvCount);
 void freeScene(Scene** scene);
 
 void drawFace(uint8_t* frameBuffer, Face* face, PlaydateAPI* pd);
